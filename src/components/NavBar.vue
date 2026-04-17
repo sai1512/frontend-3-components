@@ -7,6 +7,11 @@
     <nav>
       <h1>Student Dashboard</h1>
       <!-- TODO: logged-in section here -->
+      <div v-if="isLoggedIn">
+        <span>Welcome, {{ username }}!</span>
+        <button class="logout-button" @click="$emit('logout')">Logout</button>
+      </div>
+
     </nav>
   </header>
 </template>
@@ -15,6 +20,8 @@
 export default {
   props: {
     // TODO: define props for username (String) and isLoggedIn (Boolean)
+    username: String,
+    isLoggedIn: Boolean
   },
 
   emits: ['logout']
@@ -23,7 +30,7 @@ export default {
 
 <style scoped>
 header {
-  background-color: #1e293b;
+  background-color: #007bff;
 }
 
 nav {
@@ -38,6 +45,20 @@ nav {
 nav h1 {
   color: #e2e8f0;
   font-size: 20px;
+}
+
+.logout-button {
+    background-color: #ffffff;
+    color: #2f4f74;
+    border: none;
+    padding: 8px 14px;
+    border-radius: 999px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.logout-button:hover {
+    background-color: #e8f0fb;
 }
 
 /* TODO: add styles for the username display and logout button */
