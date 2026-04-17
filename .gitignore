@@ -1,0 +1,11 @@
+# skip node modules
+node_modules/
+# skip build output
+dist/
+# skip log files
+*.log
+# skip environment variables
+.env
+# skip IDE files
+*.swp
+*.swo
