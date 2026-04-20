@@ -39,7 +39,7 @@ export default {
       name: "",
       email: "",
       grade: "",
-      courseId: null
+      courseId: ""
     }
   },
 
@@ -57,7 +57,7 @@ export default {
       this.name = "";
       this.email = "";
       this.grade = "";
-      this.courseId = null;
+      this.courseId = "";
     }
   }
 }

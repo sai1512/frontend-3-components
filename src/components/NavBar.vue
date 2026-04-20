@@ -1,30 +1,37 @@
 <template>
-  <!-- TODO: build the nav bar -->
-  <!-- Show the app title -->
-  <!-- When logged in: show username and a logout button -->
-  <!-- The logout button should emit 'logout' when clicked -->
   <header>
     <nav>
       <h1>Student Dashboard</h1>
-      <!-- TODO: logged-in section here -->
-      <div v-if="isLoggedIn">
-        <span>Welcome, {{ username }}!</span>
-        <button class="logout-button" @click="$emit('logout')">Logout</button>
+
+      <div v-if="authStore.isLoggedIn" class="nav-links">
+        <router-link to="/">Dashboard</router-link>
+        <router-link to="/courses">Courses</router-link>
       </div>
 
+      <div v-if="authStore.isLoggedIn" class="user-actions">
+        <span>Welcome, {{ authStore.username }}!</span>
+        <button class="logout-button" @click="handleLogout">Logout</button>
+      </div>
     </nav>
   </header>
 </template>
 
 <script>
+import { useAuthStore } from '../stores/auth'
+
 export default {
-  props: {
-    // TODO: define props for username (String) and isLoggedIn (Boolean)
-    username: String,
-    isLoggedIn: Boolean
+  data() {
+    return {
+      authStore: useAuthStore()
+    }
   },
 
-  emits: ['logout']
+  methods: {
+    handleLogout() {
+      this.authStore.logout()
+      this.$router.push('/login')
+    }
+  }
 }
 </script>
 
@@ -47,6 +54,29 @@ nav h1 {
   font-size: 20px;
 }
 
+.nav-links {
+  display: flex;
+  gap: 16px;
+}
+
+.nav-links a {
+  color: #dbeafe;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.nav-links a.router-link-active {
+  color: #ffffff;
+  text-decoration: underline;
+}
+
+.user-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #eff6ff;
+}
+
 .logout-button {
     background-color: #ffffff;
     color: #2f4f74;
@@ -60,6 +90,4 @@ nav h1 {
 .logout-button:hover {
     background-color: #e8f0fb;
 }
-
-/* TODO: add styles for the username display and logout button */
 </style>

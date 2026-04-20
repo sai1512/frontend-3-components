@@ -6,6 +6,7 @@
       <p>Email: {{ student.email }}</p>
       <p>Grade: {{ student.grade }}</p>
       <div class="button-group">
+        <button @click="$emit('view', student.id)" class="view-btn">View</button>
         <button @click="toggleEdit" class="edit-btn">Edit</button>
         <button @click="$emit('delete', student.id)" class="delete-btn">Delete</button>
       </div>
@@ -61,7 +62,7 @@ export default {
       this.isEditMode = false;
     }
   },
-  emits: ['delete', 'update']
+  emits: ['delete', 'update', 'view']
 }
 </script>
 
@@ -117,40 +118,48 @@ export default {
   margin-top: 12px;
 }
 
-.edit-btn {
+.card .edit-btn {
   background: #3b82f6;
 }
 
-.edit-btn:hover {
+.card .edit-btn:hover {
   background: #2563eb;
 }
 
-.delete-btn {
+.card .view-btn {
+  background: #007bff;
+}
+
+.card .view-btn:hover {
+  background: #0056b3;
+}
+
+.card .delete-btn {
   background: #dc2626;
 }
 
-.delete-btn:hover {
+.card .delete-btn:hover {
   background: #b91c1c;
 }
 
-.save-btn {
+.card .save-btn {
   background: #10b981;
 }
 
-.save-btn:hover:not(:disabled) {
+.card .save-btn:hover:not(:disabled) {
   background: #059669;
 }
 
-.save-btn:disabled {
+.card .save-btn:disabled {
   background: #9ca3af;
   cursor: not-allowed;
 }
 
-.cancel-btn {
+.card .cancel-btn {
   background: #6b7280;
 }
 
-.cancel-btn:hover {
+.card .cancel-btn:hover {
   background: #4b5563;
 }
 

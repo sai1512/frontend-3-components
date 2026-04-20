@@ -1,124 +1,158 @@
-# Student Dashboard — Vue Components
+# Student Dashboard — Routing & State Management
 
 ## Overview
 
-Rebuild the student dashboard as a **component-based Vue app** using Vite. Break the single-file CDN version into separate .vue components with props, events, and scoped styles.
+Migrate your component-based Vue dashboard to use **Vue Router** for page navigation and **Pinia** for shared state management.
 
 ---
 
 ## Setup
 
+Starting from your session 10 project:
+
 ```bash
 cd student-dashboard
-npm install
-npm run dev
+npm install vue-router@4 pinia
 ```
-
-Open http://localhost:5173. Your Django backend must be running at localhost:8000.
 
 ---
 
-## Files Provided
-
-All component files are created with TODOs inside. The project structure is ready — you just need to fill in the logic.
+## New File Structure
 
 ```
 src/
-  main.js                    ← mounts the app (done, don't touch)
-  App.vue                    ← root component — fill in TODOs
-  components/
-    NavBar.vue               ← fill in TODOs
-    LoginForm.vue            ← fill in TODOs
-    SearchBar.vue            ← fill in TODOs
-    AddStudentForm.vue       ← fill in TODOs
-    StudentCard.vue          ← fill in TODOs
+├── main.js                     ← add router + pinia
+├── App.vue                     ← NavBar + <router-view> only
+├── router/
+│   └── index.js                ← route definitions + guard
+├── stores/
+│   ├── auth.js                 ← token, username, login(), logout()
+│   └── students.js             ← students[], loadStudents(), addStudent(), deleteStudent()
+├── views/                      ← pages (one per URL)
+│   ├── Login.vue               ← login form page
+│   ├── Dashboard.vue           ← student list + search + add form
+│   ├── StudentDetail.vue       ← single student view (NEW)
+│   └── Courses.vue             ← course list (NEW)
+└── components/                 ← reusable pieces
+    ├── NavBar.vue              ← reads from authStore directly
+    ├── StudentCard.vue          ← receives :student prop
+    ├── AddStudentForm.vue       ← emits or calls store directly
+    └── SearchBar.vue            ← emits search term
 ```
-
----
-
-## How It All Connects
-
-```
-App.vue (holds data + API logic)
-  │
-  ├── NavBar           :username, :is-logged-in  →  @logout
-  │
-  ├── LoginForm                                  →  @login { username, password }
-  │
-  ├── SearchBar                                  →  @search "term"
-  │
-  ├── AddStudentForm                             →  @student-added { name, email, grade, course }
-  │
-  └── StudentCard      :student                  →  @delete studentId
-      (one per student, rendered with v-for)
-```
-
-**Props go down (:)** — parent passes data to children.
-**Events go up (@)** — children tell the parent something happened.
 
 ---
 
 ## Step by Step
 
-### 1. Start with NavBar
-- Define props: `username` (String), `isLoggedIn` (Boolean)
-- Show the title always
-- When logged in, show the username and a logout button
-- The logout button emits 'logout': `@click="$emit('logout')"`
-- In App.vue: import, register, and use `<NavBar :username="username" :is-logged-in="isLoggedIn" @logout="handleLogout" />`
+### 1. Create the Stores
 
-### 2. LoginForm
-- Local data: username, password, loginError
-- Form with @submit.prevent calling a submit method
-- submit() emits 'login' with `{ username: this.username, password: this.password }`
-- In App.vue: show with `v-if="!isLoggedIn"`, listen with `@login="handleLogin"`
-- App.vue's handleLogin does the actual fetch to /api/token/
+**src/stores/auth.js:**
+- state: token (init from localStorage), username (init from localStorage)
+- getters: isLoggedIn (returns !!state.token)
+- actions: login(username, password) — fetch /api/token/, store token, return true/false
+- actions: logout() — clear state + localStorage
 
-### 3. StudentCard
-- Props: student (Object, required)
-- Display: name, email, grade
-- Delete button emits 'delete' with student.id
-- In App.vue: use with `v-for` and listen with `@delete="handleDelete"`
+**src/stores/students.js:**
+- state: students (array), isLoading (boolean)
+- getters: (optional) filteredStudents if you want search in the store
+- actions: loadStudents() — fetch /api/students/ using auth token
+- actions: addStudent(data) — POST to /api/students/, then reload
+- actions: deleteStudent(id) — DELETE, then remove from array
 
-### 4. AddStudentForm
-- Local data: name, email, grade, courseId
-- Form with v-model on each field
-- submit() emits 'student-added' with the form data, then clears the fields
-- App.vue's handleStudentAdded does the fetch POST
+**src/stores/courses.js:**
+- state: courses (array), isLoading (boolean)
+- actions: loadCourses() — fetch /api/courses/ using auth token
 
-### 5. SearchBar
-- Local data: searchTerm
-- Input with v-model, emits 'search' on @input
-- App.vue listens with `@search="searchTerm = $event"` and uses searchTerm in a computed
+Same pattern as the students store but simpler — just load and display, no add/delete needed.
 
-### 6. App.vue
-- Import and register all components
-- Wire up template with v-if for login/dashboard, v-for for student cards
-- Implement all methods: handleLogin, handleLogout, loadStudents, handleStudentAdded, handleDelete
-- Computed: filteredStudents filters by searchTerm
-- mounted(): check for existing token
+### 2. Create the Router
+
+**src/router/index.js:**
+- Routes: /login → Login, / → Dashboard, /students/:id → StudentDetail, /courses → Courses
+- Mark Dashboard, StudentDetail, Courses with meta: { requiresAuth: true }
+- Add a beforeEach guard: if route requiresAuth and no token, redirect to /login
+
+### 3. Update main.js
+
+```javascript
+import { createApp } from 'vue'
+import { createPinia } from 'pinia'
+import App from './App.vue'
+import router from './router'
+
+const app = createApp(App)
+app.use(createPinia())
+app.use(router)
+app.mount('#app')
+```
+
+### 4. Simplify App.vue
+
+App.vue should now only contain NavBar and <router-view>. No more v-if for login/dashboard toggling — the router handles that.
+
+### 5. Create the Views
+
+**Login.vue:**
+- Form with v-model for username/password
+- On submit: call authStore.login(), if success → $router.push('/')
+
+**Dashboard.vue:**
+- On mounted: call studentsStore.loadStudents()
+- Display search bar, add form, student cards
+- StudentCard "View" button links to /students/:id
+
+**StudentDetail.vue (NEW):**
+- Read $route.params.id
+- Fetch the single student from the API or find from the store
+- Display full details
+- Back button with $router.back()
+
+**Courses.vue (NEW):**
+- Create a src/stores/courses.js store
+- Fetch from /api/courses/ in mounted
+- Display course list
+
+### 6. Update NavBar
+
+- Import useAuthStore, read auth.isLoggedIn and auth.username directly
+- No more props from parent
+- Logout calls auth.logout() then $router.push('/login')
+- Add router-links: Dashboard, Courses
+
+### 7. Update Other Components
+
+- StudentCard can still receive :student prop (makes sense, it's a reusable card)
+- AddStudentForm can call studentsStore.addStudent() directly, or still emit — your choice
+- SearchBar can emit to Dashboard, or update a searchTerm in studentsStore
 
 ---
 
 ## Checklist
 
-- [ ] NavBar shows title, username when logged in, logout works
-- [ ] LoginForm submits credentials, App handles the API call
-- [ ] StudentCard displays student data, delete button works
-- [ ] AddStudentForm submits new student data, list refreshes
-- [ ] SearchBar filters the student list
-- [ ] v-if toggles between login and dashboard
-- [ ] All components use `<style scoped>`
-- [ ] Data lives in App.vue, children use props and events
+- [ ] Pinia installed and wired in main.js
+- [ ] Auth store with login/logout actions
+- [ ] Students store with load/add/delete actions
+- [ ] Vue Router installed and wired in main.js
+- [ ] Routes defined for Login, Dashboard, StudentDetail, Courses
+- [ ] Route guard redirects to /login when not authenticated
+- [ ] App.vue simplified to NavBar + router-view
+- [ ] Login.vue redirects to / after successful login
+- [ ] Dashboard.vue loads students from store
+- [ ] StudentDetail.vue reads :id from route params
+- [ ] Courses.vue fetches and displays courses
+- [ ] NavBar reads from authStore directly (no props)
+- [ ] NavBar has router-links for navigation
+- [ ] Scoped styles on all components
 
 ---
 
 ## Bonus Challenges
 
-- [ ] **CourseList.vue** — fetch and display courses from /api/courses/
-- [ ] **Edit mode** — StudentCard toggles between view and inline edit form
-- [ ] **LoadingSpinner.vue** — reusable loading indicator
-- [ ] **ErrorMessage.vue** — reusable error display
+- [ ] **Redirect back** — remember where the user was going before login, redirect there after
+- [ ] **404 page** — catch unmatched routes with { path: '/:pathMatch(.*)*', component: NotFound }
+- [ ] **Active link styling** — style the current nav link differently using .router-link-active
+- [ ] **Search in store** — move searchTerm into studentsStore with a filteredStudents getter
+- [ ] **Courses store** — add a getCourseById getter and create a CourseDetail view with /courses/:id
 
 ---
 
@@ -126,8 +160,8 @@ App.vue (holds data + API logic)
 
 ```bash
 git add .
-git commit -m "Session 10: Vue component-based student dashboard"
+git commit -m "Session 11: Vue Router + Pinia state management"
 git push
 ```
 
-**Next session**: Vue Router and state management with Pinia.
+**Next session**: Deploying to AWS.
